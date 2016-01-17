@@ -2,25 +2,26 @@ package temportalist.chunkcommander.server
 
 import java.util
 
-import net.minecraft.command.{WrongUsageException, ICommandSender, CommandBase}
-import net.minecraft.entity.player.EntityPlayer
+import net.minecraft.command.{CommandBase, ICommandSender}
 import net.minecraft.server.MinecraftServer
-import net.minecraft.util.BlockPos
+import net.minecraft.util.{BlockPos, ChatComponentText, ChatComponentTranslation}
 import net.minecraft.world.ChunkCoordIntPair
 import temportalist.chunkcommander.common.CommandChunkLoader
+import temportalist.origin.internal.server.command.ICommand
 
 import scala.collection.mutable.ListBuffer
 
 /**
   * Created by TheTemportalist on 1/14/2016.
   */
-object CommandChunk extends CommandBase {
+object CommandChunk extends CommandBase with ICommand {
 
 	override def getCommandName: String = "chunk"
 
-	override def getCommandUsage(sender: ICommandSender): String = "commands.chunk.usage"
+	override def getUsage: String = "commands.chunk.usage"
 
 	override def processCommand(sender: ICommandSender, args: Array[String]): Unit = {
+
 		// todo add dimension to usage
 		/* Usage:
 		  -1    0     1         2        3...
@@ -40,98 +41,100 @@ object CommandChunk extends CommandBase {
 		/chunk clearCache current
 		 */
 
-		def wrongUsage(suffix: String = null): Unit =
-			throw new WrongUsageException("commands.chunk.usage" +
-					(if (suffix == null) "" else "." + suffix))
-
 		if (args.length <= 1) wrongUsage()
 		val world = sender.getEntityWorld
 		args(0) match {
 			case "force" => //persistent loading
+				if (this.isBadOp(sender, 3)) return
 				if (args.length < 2) wrongUsage("force")
-				val chunkRet = this.getChunk(sender, args, 1)
-				val chunkCoord: ChunkCoordIntPair = chunkRet._1
-
-				val playerNames = ListBuffer[String]()
-				for (i <- chunkRet._2 until args.length) playerNames += args(i)
-
-				CommandChunkLoader.forceWithPlayers(world, chunkCoord, playerNames: _*)
+				val chunkDimRet = this.getChunk(sender, args, 1)
+				CommandChunkLoader.forceWithPlayers(world, chunkDimRet._1,
+					chunkDimRet._2, (for (i <- chunkDimRet._3 until args.length) yield args(i)): _*)
 			case "load" => // temporary loading, player centered
+				if (this.isBadOp(sender, 2)) return
 				if (args.length < 2) wrongUsage("load")
-				val chunkRet = this.getChunk(sender, args, 1)
-				val chunkCoord: ChunkCoordIntPair = chunkRet._1
-				val remainingStart = chunkRet._2
+				val chunkDimRet = this.getChunk(sender, args, 1)
+				val chunkCoord: ChunkCoordIntPair = chunkDimRet._1
+				val remainingStart = chunkDimRet._3
 
 				val playerNameOrID = this.getPlayerNameOrID(sender, args, remainingStart)
-				if (playerNameOrID == null) wrongUsage("load.player")
+				if (playerNameOrID == null) wrongUsage("playerEr")
 
-				CommandChunkLoader.load(world, chunkCoord, playerNameOrID)
-			case "unload" => // temporary unloading, player centered
-				if (args.length < 2) wrongUsage("unload")
-				val chunkRet = this.getChunk(sender, args, 1)
-				val chunkCoord: ChunkCoordIntPair = chunkRet._1
-				val remainingStart = chunkRet._2
-
-				val playerNameOrID = this.getPlayerNameOrID(sender, args, remainingStart)
-				if (playerNameOrID == null) wrongUsage("unload.player")
-
-				CommandChunkLoader.unload(world, chunkCoord, playerNameOrID)
+				CommandChunkLoader.load(world, chunkCoord, chunkDimRet._2, playerNameOrID)
 			case "player" => // adding and remove players to a forced chunk
+				if (this.isBadOp(sender, 3)) return
 				if (args.length <= 3) wrongUsage("player")
-				val chunkRet = this.getChunk(sender, args, 2)
-				val chunkCoord: ChunkCoordIntPair = chunkRet._1
-				val remainingStart = chunkRet._2
+				val chunkDimRet = this.getChunk(sender, args, 2)
+				val remainingStart = chunkDimRet._3
 
 				val playerNameOrID = this.getPlayerNameOrID(sender, args, remainingStart)
-				if (playerNameOrID == null) wrongUsage("player.player")
+				if (playerNameOrID == null) wrongUsage("playerEr")
 
 				args(1) match {
-					case "add" => CommandChunkLoader.addPlayer(world, chunkCoord, playerNameOrID)
-					case "remove" => CommandChunkLoader.removePlayer(world, chunkCoord, playerNameOrID)
+					case "add" => CommandChunkLoader.addPlayer(world, chunkDimRet._1,
+						chunkDimRet._2, playerNameOrID)
+					case "remove" => CommandChunkLoader.removePlayer(world, chunkDimRet._1,
+						chunkDimRet._2, playerNameOrID)
 					case _ =>
 				}
 			case "unforce" => // unforce loading a chunk
 				if (args.length < 2) wrongUsage("unforce")
-				CommandChunkLoader.unForce(world, this.getChunk(sender, args, 1)._1)
+				val ret = this.getChunk(sender, args, 1)
+				val isTempChunk = CommandChunkLoader.isTemporaryChunk(world, ret._1, ret._2)
+				val canRun = this.canOpLevel(sender, 3) ||
+						(isTempChunk && this.canOpLevel(sender, 2))
+				if (!canRun) this.incorrectOp(sender, 2)
+				else if (CommandChunkLoader.unForce(world, ret._1, ret._2)) {
+					sender.addChatMessage(new ChatComponentText(
+						(if (isTempChunk) "Unloaded" else "Unforced") + " chunk."))
+				}
 			case "clearCache" => // clear name cache for a chunk
-				if (args.length <= 2) wrongUsage("clearCache")
-				val chunkRet = this.getChunk(sender, args, 1)
-				val chunkCoord: ChunkCoordIntPair = chunkRet._1
-				CommandChunkLoader.clearCacheForced(world, chunkCoord)
+				if (this.isBadOp(sender, 3)) return
+				if (args.length < 2) wrongUsage("clearCache")
+				val ret = this.getChunk(sender, args, 1)
+				CommandChunkLoader.clearCacheForced(world, ret._1, ret._2)
+			case "help" => // display information
+				if (this.isBadOp(sender, 2)) return
+				if (args.length < 2)
+					sender.addChatMessage(new ChatComponentTranslation(
+						"commands.chunk.usage.help.detail"))
+				else wrongUsage(args(1))
 			case _ => wrongUsage()
 		}
 
 	}
 
-	def getChunk(sender: ICommandSender, args: Array[String], start: Int): (ChunkCoordIntPair, Int) = {
+	def getPlayerNameOrID(sender: ICommandSender, args: Array[String], start: Int): AnyRef = {
+		if (start < args.length) this.getPlayerProfile(sender, args(start), checkSender = false)
+		else this.getPlayerProfile(sender, null)
+	}
+
+	override def getRequiredPermissionLevel: Int = 1
+
+	def getChunk(sender: ICommandSender, args: Array[String], start: Int): (ChunkCoordIntPair, Int, Int) = {
 		args(start) match {
 			case "current" =>
-				(this.getCurrentChunk(sender), start + 1)
+				(this.getCurrentChunk(sender),
+						sender.getEntityWorld.provider.getDimensionId, start + 1)
 			case _ =>
-				(new ChunkCoordIntPair(asInt(args(start)), asInt(args(start + 1))), start + 2)
+				(new ChunkCoordIntPair(asInt(args(start)), asInt(args(start + 1))),
+						args(start + 2).toInt, start + 3)
 		}
-	}
-
-	def getPlayerNameOrID(sender: ICommandSender, args: Array[String], start: Int): AnyRef = {
-		if (start < args.length) args(start)
-		else sender.getCommandSenderEntity match {
-			case player: EntityPlayer => player.getGameProfile.getId
-			case _ => null
-		}
-	}
-
-	def asInt(str: String): Int = {
-		CommandBase.parseInt(str)
 	}
 
 	override def addTabCompletionOptions(sender: ICommandSender, args: Array[String],
 			pos: BlockPos): util.List[String] = {
 		val userNames = MinecraftServer.getServer.getAllUsernames
+		val cmds = Array[String](
+			"force", "load", "player", "unforce", "clearCache", "help"
+		)
 		val matchingWords = args.length match {
-			case 1 => Array[String](
-				"force", "load", "unload", "player", "unforce", "clearCache"
-			)
-			case 2 => Array[String]("current")
+			case 1 => cmds
+			case 2 =>
+				args(1) match {
+					case "help" => cmds
+					case _ => Array[String]("current")
+				}
 			case 3 =>
 				val list = ListBuffer[String]("current")
 				list ++= (args(1) match {

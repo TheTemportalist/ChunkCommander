@@ -11,22 +11,17 @@ import temportalist.origin.foundation.client.{EnumKeyCategory, IKeyBinder}
   */
 object ModKeys extends IKeyBinder {
 
-	private var toggleLoadedBoundaries: KeyBinding = null
 	private var showChunkBoundaries: KeyBinding = null
 
 	override def register(): Unit = {
-		this.toggleLoadedBoundaries = this.makeKeyBinding(
-			"toggleLoadedBoundaries", Keyboard.KEY_BACKSLASH, EnumKeyCategory.GAMEPLAY)
 		this.showChunkBoundaries = this.makeKeyBinding(
-			"showChunkBoundaries", Keyboard.KEY_RBRACKET, EnumKeyCategory.GAMEPLAY)
+			"showChunkBoundaries", Keyboard.KEY_BACKSLASH, EnumKeyCategory.GAMEPLAY)
 	}
 
 	override def getMod: IModDetails = ChunkCommander
 
 	override def onKeyPressed(keyBinding: KeyBinding): Unit = {
-		if (keyBinding == this.toggleLoadedBoundaries) WorldRender.toggleLoadedBoundaries()
-		else if (keyBinding == this.showChunkBoundaries)
-			WorldRender.toggleChunkBoundariesAndCorners()
+		WorldRender.toggleChunkBoundariesAndCorners()
 	}
 
 }
