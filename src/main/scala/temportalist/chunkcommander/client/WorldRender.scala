@@ -1,19 +1,16 @@
 package temportalist.chunkcommander.client
 
-import java.awt.Color
-
 import net.minecraft.client.Minecraft
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats
-import net.minecraft.client.renderer.{GlStateManager, Tessellator}
+import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.util.EnumFacing
-import net.minecraft.world.{World, ChunkCoordIntPair}
+import net.minecraft.world.{ChunkCoordIntPair, World}
 import net.minecraftforge.client.event.RenderWorldLastEvent
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import net.minecraftforge.fml.relauncher.{Side, SideOnly}
 import org.lwjgl.opengl.GL11
-import temportalist.chunkcommander.common.ChunkCommander
 import temportalist.origin.api.client.utility.Rendering
+import temportalist.origin.api.common.lib.V3O
 
 import scala.collection.mutable.ListBuffer
 
@@ -23,14 +20,11 @@ import scala.collection.mutable.ListBuffer
 @SideOnly(Side.CLIENT)
 object WorldRender {
 
-	private var shouldShowBoundaries = false
 	private var showChunkBoundariesState = 0
-
-	def toggleLoadedBoundaries(): Unit = this.shouldShowBoundaries = !this.shouldShowBoundaries
 
 	def toggleChunkBoundariesAndCorners(): Unit = {
 		showChunkBoundariesState += 1
-		if (showChunkBoundariesState >= 3) this.showChunkBoundariesState = 0
+		if (showChunkBoundariesState >= 4) this.showChunkBoundariesState = 0
 	}
 
 	private val forcedChunks = ListBuffer[ChunkCoordIntPair]()
@@ -66,83 +60,30 @@ object WorldRender {
 			-(p.lastTickPosZ + (p.posZ - p.lastTickPosZ) * partialTick)
 		)
 
-		// Render general chunk boundaries
+		// Render chunk corners
 		if (this.showChunkBoundariesState > 0) {
-			this.renderChunkCornerWithColor(world, p.chunkCoordX, p.chunkCoordZ, p.posY, 0.9f, 0F, 0F)
-			if (showChunkBoundariesState == 2) {
-				this.renderChunkBoundaryWithColor(world, p.chunkCoordX, p.chunkCoordZ, p.posY, 0F, 0.9F, 0F)
-			}
+			GlStateManager.pushMatrix()
+			this.renderChunkCornerWithColor(world, p.chunkCoordX, p.chunkCoordZ,
+				p.posY, 0.9f, 0F, 0F)
+			GlStateManager.popMatrix()
 		}
 
-		// render loaded chunk boundaries
-		if (this.shouldShowBoundaries) {
+		// Render current chunk boundaries
+		if (this.showChunkBoundariesState == 2) {
 			GlStateManager.pushMatrix()
-			val posY = p.posY
+			this.renderChunkBoundaryWithColor(p.chunkCoordX, p.chunkCoordZ,
+				(face: EnumFacing) => true,
+				this.calculateYForHeight(world, p.posY, 32), 0F, 0.9F, 0F)
+			GlStateManager.popMatrix()
+		}
+
+		// Render loaded chunk boundaries
+		if (this.showChunkBoundariesState == 3) {
+			GlStateManager.pushMatrix()
 			for (chunk <- this.forcedChunks) if (isChunkLoaded(world, chunk)) {
-				val chunkX = chunk.chunkXPos
-				val chunkZ = chunk.chunkZPos
-
-				// Order: SWNE
-				val doRender =
-					for (face <- EnumFacing.HORIZONTALS) yield !this.isForceLoaded(chunk, face)
-
-				val xStart = chunkX << 4
-				val zStart = chunkZ << 4
-				val xEnd = xStart + 16
-				val zEnd = zStart + 16
-				val y = this.calculateYForHeight(world, posY, 32)
-				val yStart = y._1
-				val yEnd = y._2
-
-				startLine()
-				GlStateManager.color(0F, 0F, 0.9F, 1F)
-				// Horizontal
-				for (y <- yStart.toInt to yEnd.toInt) {
-					if (doRender(0)) {
-						// South
-						GL11.glVertex3d(xStart, y, zEnd)
-						GL11.glVertex3d(xEnd, y, zEnd)
-					}
-					if (doRender(1)) {
-						// West
-						GL11.glVertex3d(xStart, y, zStart)
-						GL11.glVertex3d(xStart, y, zEnd)
-					}
-					if (doRender(2)) {
-						// North
-						GL11.glVertex3d(xStart, y, zStart)
-						GL11.glVertex3d(xEnd, y, zStart)
-					}
-					if (doRender(3)) {
-						// East
-						GL11.glVertex3d(xEnd, y, zStart)
-						GL11.glVertex3d(xEnd, y, zEnd)
-					}
-				}
-				// Vertical
-				for (h <- 1 to 15) {
-					if (doRender(0)) {
-						// South
-						GL11.glVertex3d(xStart + h, yStart, zEnd)
-						GL11.glVertex3d(xStart + h, yEnd, zEnd)
-					}
-					if (doRender(1)) {
-						// West
-						GL11.glVertex3d(xStart, yStart, zStart + h)
-						GL11.glVertex3d(xStart, yEnd, zStart + h)
-					}
-					if (doRender(2)) {
-						// North
-						GL11.glVertex3d(xStart + h, yStart, zStart)
-						GL11.glVertex3d(xStart + h, yEnd, zStart)
-					}
-					if (doRender(3)) {
-						// East
-						GL11.glVertex3d(xEnd, yStart, zStart + h)
-						GL11.glVertex3d(xEnd, yEnd, zStart + h)
-					}
-				}
-				endLine()
+				this.renderChunkBoundaryWithColor(chunk.chunkXPos, chunk.chunkZPos,
+					(face: EnumFacing) => !this.isForceLoaded(chunk, face),
+					this.calculateYForHeight(world, p.posY, 32), 0F, 0F, 0.9F)
 
 			}
 			GlStateManager.popMatrix()
@@ -219,145 +160,68 @@ object WorldRender {
 		endLine()
 	}
 
-	def renderChunkBoundaryWithColor(world: World, chunkX: Int, chunkZ: Int, posY: Double,
-			red: Float, green: Float, blue: Float): Unit = {
-		val xStart = chunkX << 4
-		val zStart = chunkZ << 4
-		val xEnd = xStart + 16
-		val zEnd = zStart + 16
-		val y = this.calculateYForHeight(world, posY, 32)
-		val yStart = y._1
-		val yEnd = y._2
+	def renderChunkBoundaryWithColor(chunkX: Int, chunkZ: Int, doRender: (EnumFacing) => Boolean,
+			yStartEnd: (Double, Double), red: Float, green: Float, blue: Float, opacity: Float = 1F): Unit = {
+		val start = new V3O(chunkX << 4, yStartEnd._1, chunkZ << 4)
+		val end = new V3O(start.x + 16, yStartEnd._2, start.z + 16)
 
 		startLine()
-		GlStateManager.color(red, green, blue, 1F)
-		// Horizontal
-		for (y <- yStart.toInt to yEnd.toInt) {
-			// East
-			GL11.glVertex3d(xEnd, y, zStart)
-			GL11.glVertex3d(xEnd, y, zEnd)
-			// West
-			GL11.glVertex3d(xStart, y, zStart)
-			GL11.glVertex3d(xStart, y, zEnd)
-			// North
-			GL11.glVertex3d(xStart, y, zEnd)
-			GL11.glVertex3d(xEnd, y, zEnd)
-			// South
-			GL11.glVertex3d(xStart, y, zStart)
-			GL11.glVertex3d(xEnd, y, zStart)
-		}
-		// Vertical
-		for (h <- 1 to 15) {
-			// North
-			GL11.glVertex3d(xStart + h, yStart, zStart)
-			GL11.glVertex3d(xStart + h, yEnd, zStart)
-			// South
-			GL11.glVertex3d(xStart + h, yStart, zEnd)
-			GL11.glVertex3d(xStart + h, yEnd, zEnd)
-			// West
-			GL11.glVertex3d(xStart, yStart, zStart + h)
-			GL11.glVertex3d(xStart, yEnd, zStart + h)
-			// East
-			GL11.glVertex3d(xEnd, yStart, zStart + h)
-			GL11.glVertex3d(xEnd, yEnd, zStart + h)
+		GlStateManager.color(red, green, blue, opacity)
+		for (face <- EnumFacing.HORIZONTALS) {
+			for {yOffset <- 0 to end.y_i() - start.y_i()
+			     horizontalOffset <- 1 to 15} {
+				if (doRender(face)) {
+					this.addLineForChunkFace(
+						face, horizontalOrVertical = true, start, end, yOffset)
+					this.addLineForChunkFace(
+						face, horizontalOrVertical = false, start, end, horizontalOffset)
+				}
+			}
 		}
 		endLine()
 	}
 
-
-	def renderBounds(chunk: ChunkCoordIntPair, player: EntityPlayer): Unit = {
-		GlStateManager.pushMatrix()
-		GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL11.GL_REPEAT)
-		GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL11.GL_REPEAT)
-		Rendering.bindResource(ChunkCommander.getResource("chunkFace"))
-
-		val maxY = 512D
-		val maxTex = maxY / 16D
-		val tess = Tessellator.getInstance()
-		val wr = tess.getWorldRenderer
-		def start(): Unit = wr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR)
-		def end(): Unit = tess.draw()
-
-		var color = Color.RED
-		def colorEnd(): Unit =
-			wr.color(color.getRed / 255F, color.getBlue / 255F, color.getGreen / 255F,
-				0.5F).endVertex()
-
-		val xStart = chunk.chunkXPos << 4
-		val zStart = chunk.chunkZPos << 4
-		GlStateManager.translate(xStart, 0, zStart)
-
-		for (face <- EnumFacing.HORIZONTALS) {
-			val shouldRenderFace = true
-			val shouldRenderOuter = !this.isForceLoaded(chunk, face)
-			val shouldRenderInner = shouldRenderOuter
-
-			if (shouldRenderFace) {
-
-				var xBounds = (0, 0)
-				var zBounds = (0, 0)
-				face match {
-					case EnumFacing.NORTH => xBounds = (0, 16)
-					case EnumFacing.SOUTH =>
-						xBounds = (16, 0)
-						zBounds = (16, 16)
-					case EnumFacing.EAST =>
-						zBounds = (0, 16)
-						xBounds = (16, 16)
-					case EnumFacing.WEST => zBounds = (16, 0)
-					case _ =>
+	def addLineForChunkFace(face: EnumFacing, horizontalOrVertical: Boolean,
+			start: V3O, end: V3O, offset: Int): Unit = {
+		face match {
+			case EnumFacing.NORTH => // -Z
+				if (horizontalOrVertical) {
+					GL11.glVertex3d(start.x, start.y + offset, start.z)
+					GL11.glVertex3d(end.x, start.y + offset, start.z)
 				}
-
-				if (shouldRenderOuter) {
-					GlStateManager.pushMatrix()
-					GlStateManager.enableBlend()
-					Rendering.blendSrcAlpha()
-					start()
-					// min max
-					wr.pos(xBounds._1, maxY, zBounds._1).tex(0D, maxTex)
-					colorEnd()
-					// max max
-					wr.pos(xBounds._2, maxY, zBounds._2).tex(1D, maxTex)
-					colorEnd()
-					// max min
-					wr.pos(xBounds._2, 0, zBounds._2).tex(1D, 0D)
-					colorEnd()
-					// min min
-					wr.pos(xBounds._1, 0, zBounds._1).tex(0D, 0D)
-					colorEnd()
-					end()
-					GlStateManager.disableBlend()
-					GlStateManager.popMatrix()
+				else {
+					GL11.glVertex3d(start.x + offset, start.y, start.z)
+					GL11.glVertex3d(start.x + offset, end.y, start.z)
 				}
-
-				color = Color.BLUE
-				if (shouldRenderInner) {
-					GlStateManager.pushMatrix()
-					GlStateManager.enableBlend()
-					Rendering.blendSrcAlpha()
-					start()
-					// min min
-					wr.pos(xBounds._1, 0, zBounds._1).tex(0D, 0D)
-					colorEnd()
-					// max min
-					wr.pos(xBounds._2, 0, zBounds._2).tex(1D, 0D)
-					colorEnd()
-					// max max
-					wr.pos(xBounds._2, maxY, zBounds._2).tex(1D, maxTex)
-					colorEnd()
-					// min max
-					wr.pos(xBounds._1, maxY, zBounds._1).tex(0D, maxTex)
-					colorEnd()
-					end()
-					GlStateManager.disableBlend()
-					GlStateManager.popMatrix()
+			case EnumFacing.SOUTH => // +Z
+				if (horizontalOrVertical) {
+					GL11.glVertex3d(start.x, start.y + offset, end.z)
+					GL11.glVertex3d(end.x, start.y + offset, end.z)
 				}
-				color = Color.RED
-
-			}
+				else {
+					GL11.glVertex3d(start.x + offset, start.y, end.z)
+					GL11.glVertex3d(start.x + offset, end.y, end.z)
+				}
+			case EnumFacing.WEST => // -X
+				if (horizontalOrVertical) {
+					GL11.glVertex3d(start.x, start.y + offset, start.z)
+					GL11.glVertex3d(start.x, start.y + offset, end.z)
+				}
+				else {
+					GL11.glVertex3d(start.x, start.y, start.z + offset)
+					GL11.glVertex3d(start.x, end.y, start.z + offset)
+				}
+			case EnumFacing.EAST => // +X
+				if (horizontalOrVertical) {
+					GL11.glVertex3d(end.x, start.y + offset, start.z)
+					GL11.glVertex3d(end.x, start.y + offset, end.z)
+				}
+				else {
+					GL11.glVertex3d(end.x, start.y, start.z + offset)
+					GL11.glVertex3d(end.x, end.y, start.z + offset)
+				}
+			case _ =>
 		}
-
-		GlStateManager.popMatrix()
 	}
 
 	def isForceLoaded(chunk: ChunkCoordIntPair, facing: EnumFacing): Boolean = {

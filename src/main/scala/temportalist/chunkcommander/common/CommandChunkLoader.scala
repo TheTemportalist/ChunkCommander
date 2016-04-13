@@ -3,6 +3,7 @@ package temportalist.chunkcommander.common
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
+import com.mojang.authlib.GameProfile
 import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.{ChunkCoordIntPair, World}
@@ -24,12 +25,6 @@ object CommandChunkLoader extends ChunkLoader {
 
 	private val temporaryByUUID = mutable.Map[UUID, ListBuffer[DimensionChunkPair]]()
 	private val temporaryToStartTime = mutable.Map[UUID, Long]()
-
-	private def constructForForced(world: World, chunk: ChunkCoordIntPair): DimensionChunkPair = {
-		val dimension = world.provider.getDimensionId
-		val chunkPair = new DimensionChunkPair(dimension, chunk)
-		chunkPair
-	}
 
 	private def constructForTemp(uuid: UUID,
 			world: World, chunk: ChunkCoordIntPair): DimensionChunkPair = {
@@ -59,6 +54,7 @@ object CommandChunkLoader extends ChunkLoader {
 		playerNameOrID match {
 			case name: String => this.getPlayerUUID(name)
 			case id: UUID => id
+			case profile: GameProfile => profile.getId
 			case _ => null
 		}
 	}
@@ -69,16 +65,23 @@ object CommandChunkLoader extends ChunkLoader {
 
 	private def forWorld(dim: Int): WorldDataChunks = this.forWorld(WorldHelper.getWorld(dim))
 
-	def forceWithPlayers(world: World, chunk: ChunkCoordIntPair, playerNames: String*): Unit = {
-		val chunkPair = this.constructForForced(world, chunk)
+	private def getWorld(world: World, dim: Int): World = {
+		if (world.provider.getDimensionId == dim) world
+		else WorldHelper.getWorld(dim)
+	}
+
+	def forceWithPlayers(worldIn: World, chunk: ChunkCoordIntPair, dim: Int,
+			playerNames: String*): Unit = {
+		val world = this.getWorld(worldIn, dim)
 		val worldData = this.forWorld(world)
-		if (!(worldData contains chunk) && this.forceLoadChunk(world, chunkPair)) {
+		if (!(worldData contains chunk) && this.forceLoadChunk(world, chunk)) {
 			worldData.addChunk(chunk, this.getPlayers(playerNames: _*), System.currentTimeMillis())
 		}
 	}
 
-	def load(world: World, chunk: ChunkCoordIntPair, playerNameOrID: AnyRef): Unit = {
+	def load(worldIn: World, chunk: ChunkCoordIntPair, dim: Int, playerNameOrID: AnyRef): Unit = {
 		val uuid = this.getUUIDFromAmbiguous(playerNameOrID)
+		val world = this.getWorld(worldIn, dim)
 		val chunkPair = this.constructForTemp(uuid, world, chunk)
 		if (this.forWorld(world).contains(chunk)) return
 		val name = Players.getUserName(uuid)
@@ -110,23 +113,36 @@ object CommandChunkLoader extends ChunkLoader {
 		for (chunk <- this.temporaryByUUID(uuid)) this.unload(chunk, uuid)
 	}
 
-	def addPlayer(world: World, chunk: ChunkCoordIntPair, playerNameOrID: AnyRef): Unit = {
+	def addPlayer(worldIn: World, chunk: ChunkCoordIntPair, dim: Int,
+			playerNameOrID: AnyRef): Unit = {
+		val world = this.getWorld(worldIn, dim)
 		val id = this.getUUIDFromAmbiguous(playerNameOrID)
 		if (id != null) this.forWorld(world).addPlayer(chunk, id)
 	}
 
-	def removePlayer(world: World, chunk: ChunkCoordIntPair, playerNameOrID: AnyRef): Unit = {
+	def removePlayer(worldIn: World, chunk: ChunkCoordIntPair, dim: Int,
+			playerNameOrID: AnyRef): Unit = {
+		val world = this.getWorld(worldIn, dim)
 		val id = this.getUUIDFromAmbiguous(playerNameOrID)
 		if (id != null) this.forWorld(world).removePlayer(chunk, id)
 	}
 
-	def unForce(world: World, chunk: ChunkCoordIntPair): Unit = {
-		if (this.unforceChunk(world.provider.getDimensionId, chunk))
-			this.forWorld(world).removeChunk(chunk)
+	def isTemporaryChunk(worldIn: World, chunk: ChunkCoordIntPair, dim: Int): Boolean = {
+		val chunkPair = new DimensionChunkPair(dim, chunk)
+		for (dimChunk <- this.temporaryByUUID.values.flatten) if (dimChunk == chunkPair) return true
+		false
 	}
 
-	def clearCacheForced(world: World, chunk: ChunkCoordIntPair): Unit = {
-		this.forWorld(world).clearCache(chunk)
+	def unForce(worldIn: World, chunk: ChunkCoordIntPair, dim: Int): Boolean = {
+		if (this.unforceChunk(dim, chunk)) {
+			if (!this.isTemporaryChunk(worldIn, chunk, dim))
+				this.forWorld(this.getWorld(worldIn, dim)).removeChunk(chunk)
+			else true
+		} else false
+	}
+
+	def clearCacheForced(world: World, chunk: ChunkCoordIntPair, dim: Int): Unit = {
+		this.forWorld(this.getWorld(world, dim)).clearCache(chunk)
 	}
 
 	override def shouldPlayerTicketPersist(playerName: String, ticket: Ticket): Boolean = {

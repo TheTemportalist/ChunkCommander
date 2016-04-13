@@ -37,13 +37,14 @@ class WorldDataChunks(key: String) extends WorldDataHandler.WorldData(key) {
 		this.markDirty()
 	}
 
-	def removeChunk(chunk: ChunkCoordIntPair): Unit = {
+	def removeChunk(chunk: ChunkCoordIntPair): Boolean = {
 		if (this contains chunk) {
 			this.chunks -= chunk
 			this.cache(chunk) = this.chunkToPlayers.remove(chunk).getOrElse(ListBuffer[UUID]())
 			this.chunkToStartTime.remove(chunk)
 			this.markDirty()
-		}
+			true
+		} else false
 	}
 
 	def contains(chunk: ChunkCoordIntPair): Boolean = this.chunks contains chunk
