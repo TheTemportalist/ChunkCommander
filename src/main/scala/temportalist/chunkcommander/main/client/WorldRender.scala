@@ -1,4 +1,4 @@
-package temportalist.chunkcommander.client
+package temportalist.chunkcommander.main.client
 
 import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.GlStateManager
@@ -9,13 +9,16 @@ import net.minecraftforge.client.event.RenderWorldLastEvent
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import net.minecraftforge.fml.relauncher.{Side, SideOnly}
 import org.lwjgl.opengl.GL11
-import temportalist.origin.api.client.utility.Rendering
-import temportalist.origin.api.common.lib.V3O
+import temportalist.origin.api.client.Rendering
+import temportalist.origin.api.common.lib.Vect
 
 import scala.collection.mutable.ListBuffer
 
 /**
+  *
   * Created by TheTemportalist on 1/15/2016.
+  *
+  * @author TheTemportalist
   */
 @SideOnly(Side.CLIENT)
 object WorldRender {
@@ -31,7 +34,8 @@ object WorldRender {
 
 	def setForcedChunks(set: Array[ChunkCoordIntPair]): Unit = {
 		this.forcedChunks.clear()
-		this.forcedChunks ++= set
+		if (set != null)
+			this.forcedChunks ++= set
 	}
 
 	def addForcedChunk(chunk: ChunkCoordIntPair): Unit = {
@@ -43,7 +47,7 @@ object WorldRender {
 	}
 
 	def isChunkLoaded(world: World, chunk: ChunkCoordIntPair): Boolean = {
-		world.getChunkProvider.chunkExists(chunk.chunkXPos, chunk.chunkZPos) &&
+		world.getChunkProvider.getLoadedChunk(chunk.chunkXPos, chunk.chunkZPos) != null &&
 				!world.getChunkProvider.provideChunk(chunk.chunkXPos, chunk.chunkZPos).isEmpty
 	}
 
@@ -51,7 +55,7 @@ object WorldRender {
 	def worldRenderLast(event: RenderWorldLastEvent): Unit = {
 		val p = Minecraft.getMinecraft.thePlayer
 		val world = Minecraft.getMinecraft.theWorld
-		val partialTick = event.partialTicks
+		val partialTick = event.getPartialTicks
 
 		GlStateManager.pushMatrix()
 		GlStateManager.translate(
@@ -162,8 +166,8 @@ object WorldRender {
 
 	def renderChunkBoundaryWithColor(chunkX: Int, chunkZ: Int, doRender: (EnumFacing) => Boolean,
 			yStartEnd: (Double, Double), red: Float, green: Float, blue: Float, opacity: Float = 1F): Unit = {
-		val start = new V3O(chunkX << 4, yStartEnd._1, chunkZ << 4)
-		val end = new V3O(start.x + 16, yStartEnd._2, start.z + 16)
+		val start = new Vect(chunkX << 4, yStartEnd._1, chunkZ << 4)
+		val end = new Vect(start.x + 16, yStartEnd._2, start.z + 16)
 
 		startLine()
 		GlStateManager.color(red, green, blue, opacity)
@@ -182,7 +186,7 @@ object WorldRender {
 	}
 
 	def addLineForChunkFace(face: EnumFacing, horizontalOrVertical: Boolean,
-			start: V3O, end: V3O, offset: Int): Unit = {
+			start: Vect, end: Vect, offset: Int): Unit = {
 		face match {
 			case EnumFacing.NORTH => // -Z
 				if (horizontalOrVertical) {

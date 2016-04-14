@@ -8,6 +8,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.common.ForgeChunkManager.Ticket;
 import net.minecraftforge.common.ForgeChunkManager.Type;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,6 +16,8 @@ import java.util.UUID;
 
 /**
  * Created by TheTemportalist on 1/14/2016.
+ *
+ * @author TheTemportalist
  */
 public abstract class ChunkLoader {
 
@@ -28,12 +31,12 @@ public abstract class ChunkLoader {
 	public abstract Object getMod();
 
 	public void notifyWithTicket(Ticket ticket) {
-		this.dimensionTicketMap.put(ticket.world.provider.getDimensionId(), ticket);
+		this.dimensionTicketMap.put(ticket.world.provider.getDimension(), ticket);
 	}
 
 	public final boolean forceLoadChunk(World world, ChunkCoordIntPair chunk, Type type) {
 		if (chunk == null || world == null) return false;
-		int dimension = world.provider.getDimensionId();
+		int dimension = world.provider.getDimension();
 		Ticket ticket = this.dimensionTicketMap.containsKey(dimension)
 				? this.dimensionTicketMap.get(dimension)
 				: ForgeChunkManager.requestTicket(this.getMod(), world, type);
@@ -64,8 +67,8 @@ public abstract class ChunkLoader {
 
 	public final boolean forceLoadChunkPlayer(String name,
 			World world, ChunkCoordIntPair chunk, Type type) {
-		// todo move this to helper function
-		PlayerProfileCache cache = MinecraftServer.getServer().getPlayerProfileCache();
+		MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
+		PlayerProfileCache cache = server.getPlayerProfileCache();
 		GameProfile profile = cache.getGameProfileForUsername(name);
 		UUID uuid = profile == null ? null : profile.getId();
 		return this.forceLoadChunkPlayer(name, uuid, world, chunk, type);

@@ -1,20 +1,23 @@
-package temportalist.chunkcommander.common.network
+package temportalist.chunkcommander.main.common.network
 
 import net.minecraft.world.ChunkCoordIntPair
-import net.minecraftforge.fml.common.network.simpleimpl.{MessageContext, IMessage, IMessageHandler}
+import net.minecraftforge.fml.common.network.simpleimpl.{IMessage, IMessageHandler, MessageContext}
 import net.minecraftforge.fml.relauncher.Side
-import temportalist.chunkcommander.client.WorldRender
+import temportalist.chunkcommander.main.client.WorldRender
 import temportalist.origin.foundation.common.network.IPacket
 
 /**
-  * Created by TheTemportalist on 1/15/2016.
+  *
+  * Created by TheTemportalist on 4/13/2016.
+  *
+  * @author TheTemportalist
   */
 class PacketChunk_Client extends IPacket {
 
 	def this(function: Byte, chunks: ChunkCoordIntPair*) {
 		this()
 		this.add(function)
-		this.add(chunks)
+		this.add(chunks.toArray)
 		println("Sending " + chunks.size + " to client")
 	}
 

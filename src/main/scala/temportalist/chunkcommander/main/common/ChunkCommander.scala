@@ -1,8 +1,5 @@
-package temportalist.chunkcommander.common
+package temportalist.chunkcommander.main.common
 
-import java.util
-
-import com.google.common.collect.{LinkedListMultimap, ListMultimap}
 import net.minecraft.entity.player.EntityPlayerMP
 import net.minecraft.world.{ChunkCoordIntPair, World}
 import net.minecraftforge.common.ForgeChunkManager
@@ -15,78 +12,105 @@ import net.minecraftforge.fml.common.gameevent.TickEvent.ServerTickEvent
 import net.minecraftforge.fml.common.{Mod, SidedProxy}
 import net.minecraftforge.fml.relauncher.Side
 import temportalist.chunkcommander.api.ApiChunkLoading
-import temportalist.chunkcommander.common.network.PacketChunk_Client
-import temportalist.chunkcommander.common.world.{WorldDataChunks, WorldDataHandler}
-import temportalist.chunkcommander.server.CommandChunk
-import temportalist.origin.api.common.resource.{EnumResource, IModDetails, IModResource}
-import temportalist.origin.api.common.utility.WorldHelper
-import temportalist.origin.foundation.common.IMod
-import temportalist.origin.foundation.common.proxy.IProxy
-import temportalist.origin.foundation.common.register.Registry
+import temportalist.chunkcommander.main.common.network.PacketChunk_Client
+import temportalist.chunkcommander.main.common.world.{WorldDataChunks, WorldDataHandler}
+import temportalist.chunkcommander.main.server.CommandChunk
+import temportalist.origin.foundation.Info
+import temportalist.origin.foundation.common.modTraits.{IHasClient, IHasCommands}
+import temportalist.origin.foundation.common.registers.OptionRegister
+import temportalist.origin.foundation.common.{IProxy, ModBase}
+import temportalist.origin.foundation.server.ICommand
 
+import scala.collection.JavaConversions
+import java.util
+
+import com.google.common.collect.{LinkedListMultimap, ListMultimap}
+import temportalist.chunkcommander.main.client.Client
+import temportalist.origin.api.common.{EnumResource, IModResource}
+import temportalist.origin.foundation.client.IModClient
+
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.collection.{JavaConversions, mutable}
 
 /**
+  *
   * Created by TheTemportalist on 1/14/2016.
+  *
+  * @author TheTemportalist
   */
-@Mod(modid = ChunkCommander.MOD_ID, name = ChunkCommander.MOD_NAME,
-	version = ChunkCommander.MOD_VERSION, modLanguage = "scala",
+@Mod(modid = ChunkCommander.MOD_ID, name = ChunkCommander.MOD_NAME, version = ChunkCommander.MOD_VERSION,
+	modLanguage = "scala",
 	guiFactory = ChunkCommander.proxyClient,
-	dependencies = "required-after:origin"
+	dependencies = Info.DEPENDENCY_FORGE// + Info.DEPENDENCY_ORIGIN
 )
-object ChunkCommander extends IMod with IModResource {
-
-	// ~~~~~~~~~~~ Mod Setup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+object ChunkCommander extends ModBase with IHasCommands with IModResource with IHasClient {
 
 	final val MOD_ID = "chunkcommander"
 	final val MOD_NAME = "Chunk Commander"
-	final val MOD_VERSION = "1.0.0"
+	final val MOD_VERSION = "@MOD_VERSION@"
+	final val proxyClient = "temportalist.chunkcommander.main.client.ProxyClient"
+	final val proxyServer = "temportalist.chunkcommander.main.server.ProxyClient"
 
-	override def getModID: String = this.MOD_ID
+	/**
+	  *
+	  * @return A mod's ID
+	  */
+	override def getModId: String = this.MOD_ID
 
-	override def getModVersion: String = this.MOD_VERSION
-
+	/**
+	  *
+	  * @return A mod's name
+	  */
 	override def getModName: String = this.MOD_NAME
 
-	override def getDetails: IModDetails = this
-
-	// ~~~~~~~~~~~ Proxy ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-	final val proxyClient = "temportalist.chunkcommander.client.ProxyClient"
-	final val proxyServer = "temportalist.chunkcommander.server.ProxyServer"
+	/**
+	  *
+	  * @return A mod's version
+	  */
+	override def getModVersion: String = this.MOD_VERSION
 
 	@SidedProxy(clientSide = proxyClient, serverSide = proxyServer)
-	var proxy: IProxy = null
+	var proxy: IProxy = _
 
-	// ~~~~~~~~~~~ Inits ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	override def getProxy: IProxy = this.proxy
+
+	override def getOptions: OptionRegister = Options
+
+	override def getClient: IModClient = Client
 
 	@Mod.EventHandler
 	def preInit(event: FMLPreInitializationEvent): Unit = {
-		super.preInitialize(this, event, this.proxy, null)
-		ApiChunkLoading.register(CommandChunkLoader)
+		super.preInitialize(event)
+
+		ApiChunkLoading.register(ChunkLoaderCommand)
+
 		this.registerNetwork()
-		this.registerPacket(classOf[PacketChunk_Client.Handler],
+		this.registerMessage(classOf[PacketChunk_Client.Handler],
 			classOf[PacketChunk_Client], Side.CLIENT)
-		Registry.registerHandler(ChunkServer)
-		WorldDataHandler.register(classOf[WorldDataChunks], this.getModID + "_data")
+
+		this.registerHandler(ChunkServer)
+		WorldDataHandler.register(classOf[WorldDataChunks], this.getModId + "_data")
 
 	}
 
 	@Mod.EventHandler
 	def init(event: FMLInitializationEvent): Unit = {
-		super.initialize(event, this.proxy)
+		super.initialize(event)
+
 	}
 
 	@Mod.EventHandler
 	def postInit(event: FMLPostInitializationEvent): Unit = {
-		super.postInitialize(event, this.proxy)
+		super.postInitialize(event)
+
 		JavaConversions.asScalaSet(ApiChunkLoading.getRegisteredMods).foreach(mod => {
 			ForgeChunkManager.setForcedChunkLoadingCallback(mod, LoadingCallback)
 		})
-		Registry.registerCommand(CommandChunk)
+
 		this.loadResource("chunkFace", (EnumResource.TEXTURE, "world/white.png"))
 	}
+
+	override def getCommands: Seq[ICommand] = Seq(CommandChunk)
 
 	// ~~~~~~~~~~~ Chunk Management ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -110,7 +134,7 @@ object ChunkCommander extends IMod with IModResource {
 				ChunkCommander.notifyLoaderWithTicket(ticket)
 				for (chunk <- JavaConversions.asScalaIterator(ticket.getChunkList.iterator())) {
 					if (ChunkCommander.shouldContinueForcingChunk(
-							ticket.getModId, ticket.world, chunk))
+						ticket.getModId, ticket.world, chunk))
 						ForgeChunkManager.forceChunk(ticket, chunk)
 					else ForgeChunkManager.releaseTicket(ticket)
 				}
@@ -134,7 +158,6 @@ object ChunkCommander extends IMod with IModResource {
 		override def ticketsLoaded(tickets: util.List[Ticket], world: World,
 				maxTicketCount: Int): util.List[Ticket] = {
 			val ticketsToBeLoaded = ListBuffer[Ticket]()
-			// todo how to order
 			ticketsToBeLoaded ++= JavaConversions.asScalaBuffer(tickets)
 			JavaConversions.bufferAsJavaList(ticketsToBeLoaded)
 		}
@@ -169,37 +192,37 @@ object ChunkCommander extends IMod with IModResource {
 
 	private var nextCheck_Hour: Long = 0L
 	private var nextCheck_Minute: Long = 0L
+
 	@SubscribeEvent
 	def ticker(event: ServerTickEvent): Unit = {
 		if (event.phase == TickEvent.Phase.START) {
-			// todo move time vars to static place somewhere
 			if (System.currentTimeMillis() > nextCheck_Hour) {
-				CommandChunkLoader.checkHourlyDelays()
+				ChunkLoaderCommand.checkHourlyDelays()
 				nextCheck_Hour = System.currentTimeMillis() + 3600000 // next hour
 			}
 			if (System.currentTimeMillis() > nextCheck_Minute) {
-				CommandChunkLoader.checkMinuteDelays()
+				ChunkLoaderCommand.checkMinuteDelays()
 				nextCheck_Minute = System.currentTimeMillis() + 60000 // next hour
 			}
 		}
 	}
 
 	@SubscribeEvent
-	def playerLogIn(event: PlayerLoggedInEvent): Unit = CommandChunkLoader.playerLogIn(event.player)
+	def playerLogIn(event: PlayerLoggedInEvent): Unit = ChunkLoaderCommand.playerLogIn(event.player)
 
 	@SubscribeEvent
-	def playerLogOut(event: PlayerLoggedOutEvent): Unit = CommandChunkLoader.playerLogOut(event.player)
+	def playerLogOut(event: PlayerLoggedOutEvent): Unit = ChunkLoaderCommand.playerLogOut(event.player)
 
 	object ChunkServer {
 		@SubscribeEvent
 		def playerLogIn(event: PlayerLoggedInEvent): Unit = {
-			if (WorldHelper.isClient(event.player.getEntityWorld)) return
+			if (event.player.getEntityWorld.isRemote) return
 			this.updatePlayer(event.player.asInstanceOf[EntityPlayerMP])
 		}
 
 		@SubscribeEvent
 		def playerChangeDim(event: PlayerChangedDimensionEvent): Unit = {
-			if (WorldHelper.isClient(event.player.getEntityWorld)) return
+			if (event.player.getEntityWorld.isRemote) return
 			this.updatePlayer(event.player.asInstanceOf[EntityPlayerMP])
 		}
 
@@ -207,30 +230,30 @@ object ChunkCommander extends IMod with IModResource {
 			// make sure chunks have been read for this world
 			WorldDataHandler.forWorld[WorldDataChunks](player.getEntityWorld)
 			// update the client
-			new PacketChunk_Client(0, CommandChunkLoader.getAllForcedChunks(
-				player.getEntityWorld): _*).sendToPlayer(
-				ChunkCommander, player)
+			new PacketChunk_Client(0,
+				ChunkLoaderCommand.getAllForcedChunks(player.getEntityWorld): _*).
+					sendToPlayer(ChunkCommander, player)
 		}
 
 		@SubscribeEvent
 		def chunkChange(event: ForceChunkEvent): Unit = {
-			if (WorldHelper.isClient(event.ticket.world)) return
-			new PacketChunk_Client(1, event.location).sendToDimension(
-				ChunkCommander, event.ticket.world.provider.getDimensionId)
+			if (event.getTicket.world.isRemote) return
+			new PacketChunk_Client(1, event.getLocation).sendToDimension(
+				ChunkCommander, event.getTicket.world.provider.getDimension)
 		}
 
 		@SubscribeEvent
 		def chunkChange(event: UnforceChunkEvent): Unit = {
-			if (WorldHelper.isClient(event.ticket.world)) return
-			new PacketChunk_Client(2, event.location).sendToDimension(
-				ChunkCommander, event.ticket.world.provider.getDimensionId)
+			if (event.getTicket.world.isRemote) return
+			new PacketChunk_Client(2, event.getLocation).sendToDimension(
+				ChunkCommander, event.getTicket.world.provider.getDimension)
 		}
 
 	}
 
 	@Mod.EventHandler
 	def serverStopping(event: FMLServerStoppingEvent): Unit = {
-		CommandChunkLoader.clearTempChunks()
+		ChunkLoaderCommand.clearTempChunks()
 	}
 
 }

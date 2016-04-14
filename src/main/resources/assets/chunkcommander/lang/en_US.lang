@@ -1,9 +1,8 @@
-commands.chunk.usage=To display help: /chunk help
-commands.chunk.usage.help.detail=The possible commands are: force, load, player, unforce, clearCache, and help<BR>Use /chunk help <command> for more info.
-commands.chunk.usage.force=Forces chunk loading. Syntax:<BR>/chunk force < current | <chunk x> <chunk z> <dimension ID> > [player names...]<BR>If no player parameter is present, calling will be assumed.
-commands.chunk.usage.load=Forces chunk loading for one session. Syntax:<BR>/chunk load < current | <chunk x> <chunk z> <dimension ID> > [player name]<BR>If no player parameter is present, calling will be assumed.
-commands.chunk.usage.player=Tethers (or un-tethers) a player to a forced chunk, if chunk has been forced. Syntax:<BR>/chunk player add < current | <chunk x> <chunk z> <dimension ID> > <player name><BR>/chunk player remove < current | <chunk x> <chunk z> <dimension ID> > <player name>
-commands.chunk.usage.unforce=Stops a chunk from being force loaded. If caller not OP'ed, then caller will not be able to unforce non-temporary chunks. Syntax:<BR>/chunk unforce < current | <chunk x> <chunk z> <dimension ID> >
-commands.chunk.usage.clearCache=
-commands.chunk.usage.help=Displays the help page.<BR>Use /chunk help [command] for more.
-commands.chunk.usage.playerEr=
+chunkcommander.commands.chunk.usage=To display help: /chunk help
+chunkcommander.commands.chunk.usage.help.detail=The possible commands are: force, load, player, unforce, clearCache, and help<BR>Use /chunk help <command> for more info.
+chunkcommander.commands.chunk.usage.force=Forces chunk loading. Syntax:<BR>/chunk force < current | <chunk x> <chunk z> <dimension ID> > [player names...]<BR>If no player parameter is present, calling will be assumed.
+chunkcommander.commands.chunk.usage.load=Forces chunk loading for one session. Syntax:<BR>/chunk load < current | <chunk x> <chunk z> <dimension ID> > [player name]<BR>If no player parameter is present, calling will be assumed.
+chunkcommander.commands.chunk.usage.player=Tethers (or un-tethers) a player to a forced chunk, if chunk has been forced. Syntax:<BR>/chunk player add < current | <chunk x> <chunk z> <dimension ID> > <player name><BR>/chunk player remove < current | <chunk x> <chunk z> <dimension ID> > <player name>
+chunkcommander.commands.chunk.usage.unforce=Stops a chunk from being force loaded. If caller not OP'ed, then caller will not be able to unforce non-temporary chunks. Syntax:<BR>/chunk unforce < current | <chunk x> <chunk z> <dimension ID> >
+chunkcommander.commands.chunk.usage.clearCache=n/a
+chunkcommander.commands.chunk.usage.help=Displays the help page.<BR>Use /chunk help [command] for more.

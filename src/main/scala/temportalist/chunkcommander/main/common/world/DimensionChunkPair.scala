@@ -1,9 +1,12 @@
-package temportalist.chunkcommander.common.world
+package temportalist.chunkcommander.main.common.world
 
 import net.minecraft.world.{World, ChunkCoordIntPair}
 
 /**
+  *
   * Created by TheTemportalist on 1/16/2016.
+  *
+  * @author TheTemportalist
   */
 class DimensionChunkPair(private val dimension: Int, x: Int, z: Int)
 		extends ChunkCoordIntPair(x, z) {
@@ -13,7 +16,7 @@ class DimensionChunkPair(private val dimension: Int, x: Int, z: Int)
 	}
 
 	def this(world: World, chunk: ChunkCoordIntPair) {
-		this(world.provider.getDimensionId, chunk)
+		this(world.provider.getDimension, chunk)
 	}
 
 	def getDimension: Int = this.dimension

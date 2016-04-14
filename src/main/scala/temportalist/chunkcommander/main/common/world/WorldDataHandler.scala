@@ -1,4 +1,5 @@
-package temportalist.chunkcommander.common.world
+package temportalist.chunkcommander.main.common.world
+
 
 import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.world.storage.MapStorage
@@ -8,8 +9,10 @@ import scala.collection.mutable
 import scala.reflect._
 
 /**
-  * TODO Move to origin
+  *
   * Created by TheTemportalist on 1/16/2016.
+  *
+  * @author TheTemportalist
   */
 object WorldDataHandler {
 
@@ -31,7 +34,7 @@ object WorldDataHandler {
 		val greyList = this.dimensionGreyList(dataClass)
 		if (greyList == null) throw new NoSuchElementException(
 			"Data class " + dataClass.getCanonicalName + " was not registered.")
-		val dim = world.provider.getDimensionId
+		val dim = world.provider.getDimension
 		if (greyList._1.nonEmpty && !greyList._1.contains(dim))return dataClass.cast(null)
 		if (greyList._2.nonEmpty && greyList._2.contains(dim)) return dataClass.cast(null)
 
@@ -56,7 +59,7 @@ object WorldDataHandler {
 
 		private var dimensionID: Int = 0
 
-		def setWorld(world: World): Unit = this.dimensionID = world.provider.getDimensionId
+		def setWorld(world: World): Unit = this.dimensionID = world.provider.getDimension
 
 		def getDimension: Int = this.dimensionID
 

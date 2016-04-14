@@ -1,25 +1,28 @@
-package temportalist.chunkcommander.common
+package temportalist.chunkcommander.main.common
 
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 import com.mojang.authlib.GameProfile
 import net.minecraft.entity.player.EntityPlayer
-import net.minecraft.server.MinecraftServer
 import net.minecraft.world.{ChunkCoordIntPair, World}
 import net.minecraftforge.common.DimensionManager
 import net.minecraftforge.common.ForgeChunkManager.Ticket
+import net.minecraftforge.fml.common.FMLCommonHandler
 import temportalist.chunkcommander.api.ChunkLoader
-import temportalist.chunkcommander.common.world.{DimensionChunkPair, WorldDataChunks, WorldDataHandler}
-import temportalist.origin.api.common.utility.{Players, WorldHelper}
+import temportalist.chunkcommander.main.common.world.{DimensionChunkPair, WorldDataChunks, WorldDataHandler}
+import temportalist.origin.api.common.utility.Players
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 /**
+  *
   * Created by TheTemportalist on 1/14/2016.
+  *
+  * @author TheTemportalist
   */
-object CommandChunkLoader extends ChunkLoader {
+object ChunkLoaderCommand extends ChunkLoader {
 
 	override def getMod: AnyRef = ChunkCommander
 
@@ -44,8 +47,8 @@ object CommandChunkLoader extends ChunkLoader {
 	}
 
 	private def getPlayerUUID(name: String): UUID = {
-		val profile =
-			MinecraftServer.getServer.getPlayerProfileCache.getGameProfileForUsername(name)
+		val profile = FMLCommonHandler.instance().getMinecraftServerInstance.
+				getPlayerProfileCache.getGameProfileForUsername(name)
 		if (profile != null) profile.getId
 		else null
 	}
@@ -63,11 +66,11 @@ object CommandChunkLoader extends ChunkLoader {
 		WorldDataHandler.forWorld[WorldDataChunks](world)
 	}
 
-	private def forWorld(dim: Int): WorldDataChunks = this.forWorld(WorldHelper.getWorld(dim))
+	private def forWorld(dim: Int): WorldDataChunks = this.forWorld(DimensionManager.getWorld(dim))
 
 	private def getWorld(world: World, dim: Int): World = {
-		if (world.provider.getDimensionId == dim) world
-		else WorldHelper.getWorld(dim)
+		if (world.provider.getDimension == dim) world
+		else DimensionManager.getWorld(dim)
 	}
 
 	def forceWithPlayers(worldIn: World, chunk: ChunkCoordIntPair, dim: Int,
@@ -92,11 +95,11 @@ object CommandChunkLoader extends ChunkLoader {
 		this.forWorld(world).updateDimension()
 	}
 
-	def unload(world: World, chunk: ChunkCoordIntPair, playerNameOrID: AnyRef): Unit = {
+	def unload(world: World, chunk: ChunkCoordIntPair, playerNameOrID: AnyRef): Boolean = {
 		this.unload(new DimensionChunkPair(world, chunk), this.getUUIDFromAmbiguous(playerNameOrID))
 	}
 
-	def unload(chunkPair: DimensionChunkPair, uuid: UUID): Unit = {
+	def unload(chunkPair: DimensionChunkPair, uuid: UUID): Boolean = {
 		if (this.unforceChunkPlayer(uuid, chunkPair)) {
 			if (this.temporaryByUUID(uuid).contains(chunkPair))
 				this.temporaryByUUID(uuid) -= chunkPair
@@ -106,7 +109,9 @@ object CommandChunkLoader extends ChunkLoader {
 					this.temporaryToStartTime remove uuid
 			}
 			this.forWorld(chunkPair.getDimension).updateDimension()
+			true
 		}
+		else false
 	}
 
 	def unload(uuid: UUID): Unit = {
@@ -137,7 +142,7 @@ object CommandChunkLoader extends ChunkLoader {
 		if (this.unforceChunk(dim, chunk)) {
 			if (!this.isTemporaryChunk(worldIn, chunk, dim))
 				this.forWorld(this.getWorld(worldIn, dim)).removeChunk(chunk)
-			else true
+			else false
 		} else false
 	}
 
@@ -156,13 +161,13 @@ object CommandChunkLoader extends ChunkLoader {
 
 	def checkHourlyDelays(): Unit = {
 		for (world <- DimensionManager.getWorlds) {
-			this.forWorld(world).checkHourDelays(ModOptions.FORCED_MAX_TIME_AWAY_HOURS)
+			this.forWorld(world).checkHourDelays(Options.FORCED_MAX_TIME_AWAY_HOURS)
 		}
 	}
 
 	def tempChunkPlayerOnlineOrTimeUnderMax(uuid: UUID, time: Long): Boolean = {
 		Players.isOnline(uuid) || TimeUnit.MILLISECONDS.toMinutes(
-			System.currentTimeMillis() - time) <= ModOptions.TEMP_MAX_TIME_AWAY_MINUTES
+			System.currentTimeMillis() - time) <= Options.TEMP_MAX_TIME_AWAY_MINUTES
 	}
 
 	def clearTempChunks(): Unit = {

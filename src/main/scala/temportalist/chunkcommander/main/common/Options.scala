@@ -1,11 +1,14 @@
-package temportalist.chunkcommander.common
+package temportalist.chunkcommander.main.common
 
-import temportalist.origin.foundation.common.register.OptionRegister
+import temportalist.origin.foundation.common.registers.OptionRegister
 
 /**
+  *
   * Created by TheTemportalist on 1/16/2016.
+  *
+  * @author TheTemportalist
   */
-object ModOptions extends OptionRegister {
+object Options extends OptionRegister {
 
 	var TEMP_MAX_TIME_AWAY_MINUTES = 60
 	var FORCED_MAX_TIME_AWAY_HOURS = 30

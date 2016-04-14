@@ -9,6 +9,8 @@ import java.util.Set;
 
 /**
  * Created by TheTemportalist on 1/14/2016.
+ *
+ * @author TheTemportalist
  */
 public class ApiChunkLoading {
 
@@ -17,8 +19,8 @@ public class ApiChunkLoading {
 	private static Map<Object, ChunkLoader> chunkLoaders = new HashMap<Object, ChunkLoader>();
 
 	/**
-	 * TODO description
-	 * To be done prior to postInit
+	 * Register a ChunkLoader object with ChunkCommander. MUST be done prior to postInit.
+	 * @param loader The ChunkLoader instance
 	 */
 	public static boolean register(ChunkLoader loader) {
 		Object mod = loader.getMod();

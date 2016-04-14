@@ -1,19 +1,22 @@
-package temportalist.chunkcommander.common.world
+package temportalist.chunkcommander.main.common.world
 
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 import net.minecraft.nbt.{NBTTagCompound, NBTTagList}
 import net.minecraft.world.ChunkCoordIntPair
-import temportalist.chunkcommander.common.network.PacketChunk_Client
-import temportalist.chunkcommander.common.{ChunkCommander, CommandChunkLoader}
+import temportalist.chunkcommander.main.common.network.PacketChunk_Client
+import temportalist.chunkcommander.main.common.{ChunkCommander, ChunkLoaderCommand}
 import temportalist.origin.api.common.utility.{NBTHelper, Players}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 /**
+  *
   * Created by TheTemportalist on 1/16/2016.
+  *
+  * @author TheTemportalist
   */
 class WorldDataChunks(key: String) extends WorldDataHandler.WorldData(key) {
 
@@ -44,7 +47,8 @@ class WorldDataChunks(key: String) extends WorldDataHandler.WorldData(key) {
 			this.chunkToStartTime.remove(chunk)
 			this.markDirty()
 			true
-		} else false
+		}
+		else false
 	}
 
 	def contains(chunk: ChunkCoordIntPair): Boolean = this.chunks contains chunk
@@ -68,7 +72,7 @@ class WorldDataChunks(key: String) extends WorldDataHandler.WorldData(key) {
 	def checkHourDelays(max: Long): Unit = {
 		var didChange = false
 		for (chunkAndStart <- this.chunkToStartTime) {
-			if (!{
+			if (! {
 				var hasOnlinePlayer = false
 				for (uuid <- this.chunkToPlayers(chunkAndStart._1))
 					if (!hasOnlinePlayer) hasOnlinePlayer = Players.isOnline(uuid)
@@ -77,7 +81,7 @@ class WorldDataChunks(key: String) extends WorldDataHandler.WorldData(key) {
 						TimeUnit.MILLISECONDS.toHours(
 							System.currentTimeMillis() - chunkAndStart._2) <= max
 			}) {
-				if (CommandChunkLoader.unforceChunk(this.getDimension, chunkAndStart._1)) {
+				if (ChunkLoaderCommand.unforceChunk(this.getDimension, chunkAndStart._1)) {
 					this.removeChunk(chunkAndStart._1)
 					didChange = true
 				}
@@ -94,7 +98,7 @@ class WorldDataChunks(key: String) extends WorldDataHandler.WorldData(key) {
 	}
 
 	def updateDimension(): Unit = {
-		new PacketChunk_Client(0, CommandChunkLoader.getAllForcedChunks(this): _*).sendToDimension(
+		new PacketChunk_Client(0, ChunkLoaderCommand.getAllForcedChunks(this): _*).sendToDimension(
 			ChunkCommander, this.getDimension)
 	}
 
