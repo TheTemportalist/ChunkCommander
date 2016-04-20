@@ -15,7 +15,6 @@ import temportalist.chunkcommander.api.ApiChunkLoading
 import temportalist.chunkcommander.main.common.network.PacketChunk_Client
 import temportalist.chunkcommander.main.common.world.{WorldDataChunks, WorldDataHandler}
 import temportalist.chunkcommander.main.server.CommandChunk
-import temportalist.origin.foundation.Info
 import temportalist.origin.foundation.common.modTraits.{IHasClient, IHasCommands}
 import temportalist.origin.foundation.common.registers.OptionRegister
 import temportalist.origin.foundation.common.{IProxy, ModBase}
@@ -41,7 +40,7 @@ import scala.collection.mutable.ListBuffer
 @Mod(modid = ChunkCommander.MOD_ID, name = ChunkCommander.MOD_NAME, version = ChunkCommander.MOD_VERSION,
 	modLanguage = "scala",
 	guiFactory = ChunkCommander.proxyClient,
-	dependencies = Info.DEPENDENCY_FORGE// + Info.DEPENDENCY_ORIGIN
+	dependencies = "required-after:Forge"
 )
 object ChunkCommander extends ModBase with IHasCommands with IModResource with IHasClient {
 
