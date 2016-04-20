@@ -40,7 +40,7 @@ import scala.collection.mutable.ListBuffer
 @Mod(modid = ChunkCommander.MOD_ID, name = ChunkCommander.MOD_NAME, version = ChunkCommander.MOD_VERSION,
 	modLanguage = "scala",
 	guiFactory = ChunkCommander.proxyClient,
-	dependencies = "required-after:Forge"
+	dependencies = "required-after:Forge;required-after:Origin"
 )
 object ChunkCommander extends ModBase with IHasCommands with IModResource with IHasClient {
 
