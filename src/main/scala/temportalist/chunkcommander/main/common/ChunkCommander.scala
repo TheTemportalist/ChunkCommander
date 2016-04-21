@@ -1,5 +1,8 @@
 package temportalist.chunkcommander.main.common
 
+import java.util
+
+import com.google.common.collect.{LinkedListMultimap, ListMultimap}
 import net.minecraft.entity.player.EntityPlayerMP
 import net.minecraft.world.{ChunkCoordIntPair, World}
 import net.minecraftforge.common.ForgeChunkManager
@@ -15,20 +18,13 @@ import temportalist.chunkcommander.api.ApiChunkLoading
 import temportalist.chunkcommander.main.common.network.PacketChunk_Client
 import temportalist.chunkcommander.main.common.world.{WorldDataChunks, WorldDataHandler}
 import temportalist.chunkcommander.main.server.CommandChunk
-import temportalist.origin.foundation.common.modTraits.{IHasClient, IHasCommands}
+import temportalist.origin.api.common.{EnumResource, IModResource}
+import temportalist.origin.foundation.common.modTraits.IHasCommands
 import temportalist.origin.foundation.common.registers.OptionRegister
 import temportalist.origin.foundation.common.{IProxy, ModBase}
 import temportalist.origin.foundation.server.ICommand
 
-import scala.collection.JavaConversions
-import java.util
-
-import com.google.common.collect.{LinkedListMultimap, ListMultimap}
-import temportalist.chunkcommander.main.client.Client
-import temportalist.origin.api.common.{EnumResource, IModResource}
-import temportalist.origin.foundation.client.IModClient
-
-import scala.collection.mutable
+import scala.collection.{JavaConversions, mutable}
 import scala.collection.mutable.ListBuffer
 
 /**
@@ -42,7 +38,7 @@ import scala.collection.mutable.ListBuffer
 	guiFactory = ChunkCommander.proxyClient,
 	dependencies = "required-after:Forge;required-after:Origin"
 )
-object ChunkCommander extends ModBase with IHasCommands with IModResource with IHasClient {
+object ChunkCommander extends ModBase with IHasCommands with IModResource {
 
 	final val MOD_ID = "chunkcommander"
 	final val MOD_NAME = "Chunk Commander"
@@ -74,8 +70,6 @@ object ChunkCommander extends ModBase with IHasCommands with IModResource with I
 	override def getProxy: IProxy = this.proxy
 
 	override def getOptions: OptionRegister = Options
-
-	override def getClient: IModClient = Client
 
 	@Mod.EventHandler
 	def preInit(event: FMLPreInitializationEvent): Unit = {
