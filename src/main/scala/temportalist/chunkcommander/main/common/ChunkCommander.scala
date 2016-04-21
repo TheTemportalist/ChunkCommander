@@ -48,7 +48,7 @@ object ChunkCommander extends ModBase with IHasCommands with IModResource with I
 	final val MOD_NAME = "Chunk Commander"
 	final val MOD_VERSION = "@MOD_VERSION@"
 	final val proxyClient = "temportalist.chunkcommander.main.client.ProxyClient"
-	final val proxyServer = "temportalist.chunkcommander.main.server.ProxyClient"
+	final val proxyServer = "temportalist.chunkcommander.main.server.ProxyServer"
 
 	/**
 	  *
