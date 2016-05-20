@@ -4,7 +4,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 import net.minecraft.nbt.{NBTTagCompound, NBTTagList}
-import net.minecraft.world.ChunkCoordIntPair
+import net.minecraft.util.math.ChunkPos
 import temportalist.chunkcommander.main.common.network.PacketChunk_Client
 import temportalist.chunkcommander.main.common.{ChunkCommander, ChunkLoaderCommand}
 import temportalist.origin.api.common.utility.{NBTHelper, Players}
@@ -20,12 +20,12 @@ import scala.collection.mutable.ListBuffer
   */
 class WorldDataChunks(key: String) extends WorldDataHandler.WorldData(key) {
 
-	private val chunks = ListBuffer[ChunkCoordIntPair]()
-	private val chunkToPlayers = mutable.Map[ChunkCoordIntPair, ListBuffer[UUID]]()
-	private val chunkToStartTime = mutable.Map[ChunkCoordIntPair, Long]()
-	private val cache = mutable.Map[ChunkCoordIntPair, ListBuffer[UUID]]()
+	private val chunks = ListBuffer[ChunkPos]()
+	private val chunkToPlayers = mutable.Map[ChunkPos, ListBuffer[UUID]]()
+	private val chunkToStartTime = mutable.Map[ChunkPos, Long]()
+	private val cache = mutable.Map[ChunkPos, ListBuffer[UUID]]()
 
-	def addChunk(chunk: ChunkCoordIntPair, players: Array[UUID], startTime: Long): Unit = {
+	def addChunk(chunk: ChunkPos, players: Array[UUID], startTime: Long): Unit = {
 		this.chunks += chunk
 
 		if (this.chunkToPlayers.contains(chunk)) this.chunkToPlayers(chunk).clear()
@@ -40,7 +40,7 @@ class WorldDataChunks(key: String) extends WorldDataHandler.WorldData(key) {
 		this.markDirty()
 	}
 
-	def removeChunk(chunk: ChunkCoordIntPair): Boolean = {
+	def removeChunk(chunk: ChunkPos): Boolean = {
 		if (this contains chunk) {
 			this.chunks -= chunk
 			this.cache(chunk) = this.chunkToPlayers.remove(chunk).getOrElse(ListBuffer[UUID]())
@@ -51,23 +51,23 @@ class WorldDataChunks(key: String) extends WorldDataHandler.WorldData(key) {
 		else false
 	}
 
-	def contains(chunk: ChunkCoordIntPair): Boolean = this.chunks contains chunk
+	def contains(chunk: ChunkPos): Boolean = this.chunks contains chunk
 
-	def addPlayer(chunk: ChunkCoordIntPair, id: UUID): Unit = {
+	def addPlayer(chunk: ChunkPos, id: UUID): Unit = {
 		if (this contains chunk) {
 			this.chunkToPlayers(chunk) += id
 			this.markDirty()
 		}
 	}
 
-	def removePlayer(chunk: ChunkCoordIntPair, id: UUID): Unit = {
+	def removePlayer(chunk: ChunkPos, id: UUID): Unit = {
 		if (this contains chunk) {
 			this.chunkToPlayers(chunk) -= id
 			this.markDirty()
 		}
 	}
 
-	def clearCache(chunk: ChunkCoordIntPair): Unit = this.cache.remove(chunk)
+	def clearCache(chunk: ChunkPos): Unit = this.cache.remove(chunk)
 
 	def checkHourDelays(max: Long): Unit = {
 		var didChange = false
@@ -90,7 +90,7 @@ class WorldDataChunks(key: String) extends WorldDataHandler.WorldData(key) {
 		if (didChange) this.markDirty()
 	}
 
-	def getAllChunks: Array[ChunkCoordIntPair] = this.chunks.toArray
+	def getAllChunks: Array[ChunkPos] = this.chunks.toArray
 
 	override def markDirty(): Unit = {
 		super.markDirty()
@@ -125,7 +125,7 @@ class WorldDataChunks(key: String) extends WorldDataHandler.WorldData(key) {
 		val chunkList = nbt.getTagList("chunks", NBTHelper.getNBTType[NBTTagCompound])
 		for (i <- 0 until chunkList.tagCount()) {
 			val tagCom = chunkList.getCompoundTagAt(i)
-			val chunk = new ChunkCoordIntPair(tagCom.getInteger("x"), tagCom.getInteger("z"))
+			val chunk = new ChunkPos(tagCom.getInteger("x"), tagCom.getInteger("z"))
 			this.chunks += chunk
 			this.chunkToPlayers(chunk) = NBTHelper.get[ListBuffer[UUID]](tagCom.getTag("ids"))
 			this.chunkToStartTime(chunk) = System.currentTimeMillis()

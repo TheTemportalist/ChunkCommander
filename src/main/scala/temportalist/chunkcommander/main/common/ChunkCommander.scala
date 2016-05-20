@@ -4,7 +4,8 @@ import java.util
 
 import com.google.common.collect.{LinkedListMultimap, ListMultimap}
 import net.minecraft.entity.player.EntityPlayerMP
-import net.minecraft.world.{ChunkCoordIntPair, World}
+import net.minecraft.util.math.ChunkPos
+import net.minecraft.world.World
 import net.minecraftforge.common.ForgeChunkManager
 import net.minecraftforge.common.ForgeChunkManager._
 import net.minecraftforge.fml.common.event.{FMLInitializationEvent, FMLPostInitializationEvent, FMLPreInitializationEvent, FMLServerStoppingEvent}
@@ -24,8 +25,8 @@ import temportalist.origin.foundation.common.registers.OptionRegister
 import temportalist.origin.foundation.common.{IProxy, ModBase}
 import temportalist.origin.foundation.server.ICommand
 
-import scala.collection.{JavaConversions, mutable}
 import scala.collection.mutable.ListBuffer
+import scala.collection.{JavaConversions, mutable}
 
 /**
   *
@@ -174,7 +175,7 @@ object ChunkCommander extends ModBase with IHasCommands with IModResource {
 		ApiChunkLoading.getChunkLoader(ticket.getModId).notifyWithTicket(ticket)
 	}
 
-	def shouldContinueForcingChunk(modID: String, world: World, chunk: ChunkCoordIntPair): Boolean = {
+	def shouldContinueForcingChunk(modID: String, world: World, chunk: ChunkPos): Boolean = {
 		ApiChunkLoading.getChunkLoader(modID).shouldContinueForcingChunk(world, chunk)
 	}
 

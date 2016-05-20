@@ -1,6 +1,6 @@
 package temportalist.chunkcommander.main.common.network
 
-import net.minecraft.world.ChunkCoordIntPair
+import net.minecraft.util.math.ChunkPos
 import net.minecraftforge.fml.common.network.simpleimpl.{IMessage, IMessageHandler, MessageContext}
 import net.minecraftforge.fml.relauncher.Side
 import temportalist.chunkcommander.main.client.WorldRender
@@ -14,7 +14,7 @@ import temportalist.origin.foundation.common.network.IPacket
   */
 class PacketChunk_Client extends IPacket {
 
-	def this(function: Byte, chunks: ChunkCoordIntPair*) {
+	def this(function: Byte, chunks: ChunkPos*) {
 		this()
 		this.add(function)
 		this.add(chunks.toArray)
@@ -28,7 +28,7 @@ object PacketChunk_Client {
 	class Handler extends IMessageHandler[PacketChunk_Client, IMessage] {
 		override def onMessage(message: PacketChunk_Client, ctx: MessageContext): IMessage = {
 			val function = message.get[Byte]
-			val set = message.get[Array[ChunkCoordIntPair]]
+			val set = message.get[Array[ChunkPos]]
 			function match {
 				case 0 => // send an array of chunks
 					WorldRender.setForcedChunks(set)

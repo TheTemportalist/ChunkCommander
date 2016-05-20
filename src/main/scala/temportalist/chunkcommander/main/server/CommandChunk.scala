@@ -4,9 +4,8 @@ import java.util
 
 import net.minecraft.command.{CommandBase, ICommandSender}
 import net.minecraft.server.MinecraftServer
-import net.minecraft.util.math.BlockPos
+import net.minecraft.util.math.{BlockPos, ChunkPos}
 import net.minecraft.util.text.{TextComponentString, TextComponentTranslation}
-import net.minecraft.world.ChunkCoordIntPair
 import temportalist.chunkcommander.main.common.{ChunkCommander, ChunkLoaderCommand}
 import temportalist.origin.api.common.IModDetails
 import temportalist.origin.foundation.server.Command
@@ -234,20 +233,20 @@ object CommandChunk extends Command {
 		this.tabCompleteSet(args, server.getPlayerList.getAllUsernames:_*)
 	}
 
-	def getChunk(sender: ICommandSender, args: Array[String], start: Int): (ChunkCoordIntPair, Int, Int) = {
+	def getChunk(sender: ICommandSender, args: Array[String], start: Int): (ChunkPos, Int, Int) = {
 		args(start) match {
 			case "current" =>
 				(this.getCurrentChunk(sender),
 						sender.getEntityWorld.provider.getDimension, start + 1)
 			case _ =>
-				(new ChunkCoordIntPair(asInt(args(start)), asInt(args(start + 1))),
+				(new ChunkPos(asInt(args(start)), asInt(args(start + 1))),
 						args(start + 2).toInt, start + 3)
 		}
 	}
 
-	def getCurrentChunk(sender: ICommandSender): ChunkCoordIntPair = {
+	def getCurrentChunk(sender: ICommandSender): ChunkPos = {
 		val pos = sender.getPosition
-		new ChunkCoordIntPair(pos.getX >> 4, pos.getZ >> 4)
+		new ChunkPos(pos.getX >> 4, pos.getZ >> 4)
 	}
 
 	override def getRequiredPermissionLevel: Int = 1

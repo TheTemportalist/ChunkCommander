@@ -4,7 +4,8 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.util.EnumFacing
-import net.minecraft.world.{ChunkCoordIntPair, World}
+import net.minecraft.util.math.ChunkPos
+import net.minecraft.world.World
 import net.minecraftforge.client.event.RenderWorldLastEvent
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import net.minecraftforge.fml.relauncher.{Side, SideOnly}
@@ -30,23 +31,23 @@ object WorldRender {
 		if (showChunkBoundariesState >= 4) this.showChunkBoundariesState = 0
 	}
 
-	private val forcedChunks = ListBuffer[ChunkCoordIntPair]()
+	private val forcedChunks = ListBuffer[ChunkPos]()
 
-	def setForcedChunks(set: Array[ChunkCoordIntPair]): Unit = {
+	def setForcedChunks(set: Array[ChunkPos]): Unit = {
 		this.forcedChunks.clear()
 		if (set != null)
 			this.forcedChunks ++= set
 	}
 
-	def addForcedChunk(chunk: ChunkCoordIntPair): Unit = {
+	def addForcedChunk(chunk: ChunkPos): Unit = {
 		this.forcedChunks += chunk
 	}
 
-	def removeForcedChunk(chunk: ChunkCoordIntPair): Unit = {
+	def removeForcedChunk(chunk: ChunkPos): Unit = {
 		this.forcedChunks -= chunk
 	}
 
-	def isChunkLoaded(world: World, chunk: ChunkCoordIntPair): Boolean = {
+	def isChunkLoaded(world: World, chunk: ChunkPos): Boolean = {
 		world.getChunkProvider.getLoadedChunk(chunk.chunkXPos, chunk.chunkZPos) != null &&
 				!world.getChunkProvider.provideChunk(chunk.chunkXPos, chunk.chunkZPos).isEmpty
 	}
@@ -228,17 +229,17 @@ object WorldRender {
 		}
 	}
 
-	def isForceLoaded(chunk: ChunkCoordIntPair, facing: EnumFacing): Boolean = {
+	def isForceLoaded(chunk: ChunkPos, facing: EnumFacing): Boolean = {
 		this.isForceLoaded(chunk.chunkXPos, chunk.chunkZPos, facing)
 	}
 
 	def isForceLoaded(chunkX: Int, chunkZ: Int, facing: EnumFacing): Boolean = {
-		this.forcedChunks contains new ChunkCoordIntPair(
+		this.forcedChunks contains new ChunkPos(
 			chunkX + facing.getDirectionVec.getX,
 			chunkZ + facing.getDirectionVec.getZ)
 	}
 
-	def isPlayerInRow(chunk: ChunkCoordIntPair, directionToCheck: EnumFacing,
+	def isPlayerInRow(chunk: ChunkPos, directionToCheck: EnumFacing,
 			p: EntityPlayer): Boolean = {
 		var currentChunkX = chunk.chunkXPos
 		var currentChunkZ = chunk.chunkZPos

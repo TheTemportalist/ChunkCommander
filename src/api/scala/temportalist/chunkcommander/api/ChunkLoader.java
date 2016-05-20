@@ -3,7 +3,7 @@ package temportalist.chunkcommander.api;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.PlayerProfileCache;
-import net.minecraft.world.ChunkCoordIntPair;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.common.ForgeChunkManager.Ticket;
@@ -34,7 +34,7 @@ public abstract class ChunkLoader {
 		this.dimensionTicketMap.put(ticket.world.provider.getDimension(), ticket);
 	}
 
-	public final boolean forceLoadChunk(World world, ChunkCoordIntPair chunk, Type type) {
+	public final boolean forceLoadChunk(World world, ChunkPos chunk, Type type) {
 		if (chunk == null || world == null) return false;
 		int dimension = world.provider.getDimension();
 		Ticket ticket = this.dimensionTicketMap.containsKey(dimension)
@@ -46,11 +46,11 @@ public abstract class ChunkLoader {
 		return true;
 	}
 
-	public final boolean forceLoadChunk(World world, ChunkCoordIntPair chunk) {
+	public final boolean forceLoadChunk(World world, ChunkPos chunk) {
 		return this.forceLoadChunk(world, chunk, Type.NORMAL);
 	}
 
-	public final boolean unforceChunk(int dimensionID, ChunkCoordIntPair chunk) {
+	public final boolean unforceChunk(int dimensionID, ChunkPos chunk) {
 		Ticket ticket = this.dimensionTicketMap.get(dimensionID);
 		if (ticket == null) return false;
 		ForgeChunkManager.unforceChunk(ticket, chunk);
@@ -61,12 +61,12 @@ public abstract class ChunkLoader {
 		return true;
 	}
 
-	public final boolean forceLoadChunkPlayer(String name, World world, ChunkCoordIntPair chunk) {
+	public final boolean forceLoadChunkPlayer(String name, World world, ChunkPos chunk) {
 		return this.forceLoadChunkPlayer(name, world, chunk, Type.NORMAL);
 	}
 
 	public final boolean forceLoadChunkPlayer(String name,
-			World world, ChunkCoordIntPair chunk, Type type) {
+			World world, ChunkPos chunk, Type type) {
 		MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
 		PlayerProfileCache cache = server.getPlayerProfileCache();
 		GameProfile profile = cache.getGameProfileForUsername(name);
@@ -75,12 +75,12 @@ public abstract class ChunkLoader {
 	}
 
 	public final boolean forceLoadChunkPlayer(String name, UUID uuid,
-			World world, ChunkCoordIntPair chunk) {
+			World world, ChunkPos chunk) {
 		return this.forceLoadChunkPlayer(name, uuid, world, chunk, Type.NORMAL);
 	}
 
 	public final boolean forceLoadChunkPlayer(String name, UUID uuid,
-			World world, ChunkCoordIntPair chunk, Type type) {
+			World world, ChunkPos chunk, Type type) {
 		if (chunk == null || world == null) return false;
 		Ticket ticket = this.playerTickets.containsKey(uuid)
 				? this.playerTickets.get(uuid)
@@ -91,7 +91,7 @@ public abstract class ChunkLoader {
 		return true;
 	}
 
-	public final boolean unforceChunkPlayer(UUID uuid, ChunkCoordIntPair chunk) {
+	public final boolean unforceChunkPlayer(UUID uuid, ChunkPos chunk) {
 		Ticket ticket = this.playerTickets.get(uuid);
 		if (ticket == null) return false;
 		ForgeChunkManager.unforceChunk(ticket, chunk);
@@ -106,7 +106,7 @@ public abstract class ChunkLoader {
 		return false;
 	}
 
-	public boolean shouldContinueForcingChunk(World world, ChunkCoordIntPair chunk) {
+	public boolean shouldContinueForcingChunk(World world, ChunkPos chunk) {
 		return false;
 	}
 

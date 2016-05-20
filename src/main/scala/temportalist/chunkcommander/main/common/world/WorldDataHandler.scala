@@ -39,7 +39,7 @@ object WorldDataHandler {
 		if (greyList._2.nonEmpty && greyList._2.contains(dim)) return dataClass.cast(null)
 
 		val storage: MapStorage = world.getPerWorldStorage
-		var data = storage.loadData(dataClass, key)
+		var data = storage.getOrLoadData(dataClass, key)
 		if (data == null)
 			try {
 				data = dataClass.getConstructor(classOf[String]).newInstance(key)
@@ -63,9 +63,10 @@ object WorldDataHandler {
 
 		def getDimension: Int = this.dimensionID
 
-		override final def writeToNBT(nbt: NBTTagCompound): Unit = {
+		override final def writeToNBT(nbt: NBTTagCompound): NBTTagCompound = {
 			nbt.setInteger("dim", this.dimensionID)
 			this.write(nbt)
+			nbt
 		}
 
 		override final def readFromNBT(nbt: NBTTagCompound): Unit = {

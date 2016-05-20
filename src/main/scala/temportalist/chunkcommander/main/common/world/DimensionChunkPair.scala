@@ -1,6 +1,7 @@
 package temportalist.chunkcommander.main.common.world
 
-import net.minecraft.world.{World, ChunkCoordIntPair}
+import net.minecraft.util.math.ChunkPos
+import net.minecraft.world.World
 
 /**
   *
@@ -9,13 +10,13 @@ import net.minecraft.world.{World, ChunkCoordIntPair}
   * @author TheTemportalist
   */
 class DimensionChunkPair(private val dimension: Int, x: Int, z: Int)
-		extends ChunkCoordIntPair(x, z) {
+		extends ChunkPos(x, z) {
 
-	def this(dim: Int, chunk: ChunkCoordIntPair) {
+	def this(dim: Int, chunk: ChunkPos) {
 		this(dim, chunk.chunkXPos, chunk.chunkZPos)
 	}
 
-	def this(world: World, chunk: ChunkCoordIntPair) {
+	def this(world: World, chunk: ChunkPos) {
 		this(world.provider.getDimension, chunk)
 	}
 
