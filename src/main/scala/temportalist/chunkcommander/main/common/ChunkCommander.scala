@@ -37,7 +37,7 @@ import scala.collection.{JavaConversions, mutable}
 @Mod(modid = ChunkCommander.MOD_ID, name = ChunkCommander.MOD_NAME, version = ChunkCommander.MOD_VERSION,
 	modLanguage = "scala",
 	guiFactory = ChunkCommander.proxyClient,
-	dependencies = "required-after:Forge;required-after:Origin"
+	dependencies = "required-after:Forge;" + "required-after:origin;"
 )
 object ChunkCommander extends ModBase with IHasCommands with IModResource {
 
