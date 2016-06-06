@@ -18,7 +18,6 @@ class PacketChunk_Client extends IPacket {
 		this()
 		this.add(function)
 		this.add(chunks.toArray)
-		println("Sending " + chunks.size + " to client")
 	}
 
 	override def getReceivableSide: Side = Side.CLIENT
