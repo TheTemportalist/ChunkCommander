@@ -1,4 +1,4 @@
-chunkcommander.commands.chunk.usage=To display help: /chunk help
+chunkcommander.commands.chunk.usage=/chunk < force | load > < current | <chunk x> <chunk z> <dimension ID> > [player names...]
 chunkcommander.commands.chunk.usage.help.detail=The possible commands are: force, load, player, unforce, clearCache, and help<BR>Use /chunk help <command> for more info.
 chunkcommander.commands.chunk.usage.force=Forces chunk loading. Syntax:<BR>/chunk force < current | <chunk x> <chunk z> <dimension ID> > [player names...]<BR>If no player parameter is present, calling will be assumed.
 chunkcommander.commands.chunk.usage.load=Forces chunk loading for one session. Syntax:<BR>/chunk load < current | <chunk x> <chunk z> <dimension ID> > [player name]<BR>If no player parameter is present, calling will be assumed.
