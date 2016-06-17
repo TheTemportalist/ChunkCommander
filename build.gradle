@@ -84,7 +84,7 @@ automata {
 	// ~~~ Start: Versioning
 	versionMajor = 1
 	versionMinor = 1
-	versionPatch = 0
+	versionPatch = 1
 
 	if (project.hasProperty("MANUAL"))
 		manualBuildNumber = MANUAL
@@ -160,6 +160,35 @@ automata {
 	}
 	// ~~~~~ End: Archives
 
+}
+task release { // Done locally to execute a release on CI to curseforge
+	doLast {
+
+		def branch = automata.getBranch()
+		def version = automata.getVersionStr()
+
+		/** Tag with version */
+
+		("git tag " + version).execute().waitFor()
+
+		/** Push to BRANCH */
+
+		("git push -u origin " + branch + " --tags").execute().waitFor()
+
+		/** Merge current branch with master */
+
+		"git checkout master".execute().waitFor()
+		("git merge " + branch).execute().waitFor()
+
+		/** Push with content AND tags */
+
+		"git push -u origin master --tags".execute().waitFor()
+
+		/** Checkout BRANCH */
+
+		("git checkout " + branch).execute().waitFor()
+
+	}
 }
 
 // ~~~~~ End: Automata
