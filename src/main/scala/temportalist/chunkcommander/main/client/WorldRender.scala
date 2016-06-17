@@ -70,6 +70,8 @@ object WorldRender {
 			GlStateManager.pushMatrix()
 			this.renderChunkCornerWithColor(world, p.chunkCoordX, p.chunkCoordZ,
 				p.posY, 0.9f, 0F, 0F)
+			this.renderLineCenter(world, p.chunkCoordX, p.chunkCoordZ, p.posY,
+				0.9F, 0.9F, 0F, opacity = 0.9F)
 			GlStateManager.popMatrix()
 		}
 
@@ -161,6 +163,25 @@ object WorldRender {
 				GL11.glVertex3d(xStart, yStart, zStart)
 				GL11.glVertex3d(xStart, yEnd, zStart)
 			}
+		}
+		endLine()
+	}
+
+	def renderLineCenter(world: World, chunkX: Int, chunkZ: Int, posY: Double,
+			red: Float, green: Float, blue: Float, opacity: Float = 1F): Unit = {
+
+		val y = this.calculateYForHeight(world, posY, 128)
+		val yS = y._1 // start
+		val yE = y._2 // end
+
+		startLine()
+		GlStateManager.color(red, green, blue, opacity)
+		for {
+			cX <- chunkX - 1 to chunkX + 1
+			cZ <- chunkZ - 1 to chunkZ + 1
+		} {
+			GL11.glVertex3d((cX << 4) + 8, yS, (cZ << 4) + 8)
+			GL11.glVertex3d((cX << 4) + 8, yE, (cZ << 4) + 8)
 		}
 		endLine()
 	}
