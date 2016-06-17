@@ -16,7 +16,7 @@ buildscript {
 plugins {
 	id 'java'
 	id 'scala'
-	id "temportalist.automata" version "0.0.1.54"
+	id "temportalist.automata" version "0.0.1.57"
 }
 // ~~~~~ End: Gradle plugin application
 
@@ -165,7 +165,7 @@ task release { // Done locally to execute a release on CI to curseforge
 	doLast {
 
 		def branch = automata.getBranch()
-		def version = automata.getVersionStr()
+		def version = automata.getVersionNoBuild()
 
 		/** Tag with version */
 
