@@ -84,7 +84,7 @@ automata {
 	// ~~~ Start: Versioning
 	versionMajor = 1
 	versionMinor = 1
-	versionPatch = 2
+	versionPatch = 3
 
 	if (project.hasProperty("MANUAL"))
 		manualBuildNumber = MANUAL
@@ -119,7 +119,7 @@ automata {
 		id = curseID
 		fileExtension = 'html'
 		template = file('changelog.min.html').getText("UTF-8")
-		fromRef = '709e925c6584f4d999cce318ea3b9104f3ab86d6'
+		fromRef = '7a2f59f35a343160877303264471b67520178099'
 		toRef = 'HEAD'
 	}
 	// ~~~~~ End: Changelog
